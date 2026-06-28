@@ -1,0 +1,83 @@
+version: 1.0.0
+# Devices Configuration for Freenove ESP32-S3-WROOM-1 Camera Board
+#
+# Device summary:
+#   camera    - OV5640 over DVP 8-bit (XCLK 20 MHz, JPEG 1024x768@30FPS default)
+#   fs_sdcard - on-board microSD slot in 1-bit SDIO mode; mounts as
+#               CLAW_PATH_DATA root
+#   led_strip - on-board WS2812 (one pixel) on GPIO48 via RMT0
+#
+# No PDM microphone is wired on this board.
+
+devices:
+  - name: camera
+    type: camera
+    sub_type: dvp
+    version: default
+    config:
+      dvp_config:
+        reset_io: -1
+        pwdn_io: -1
+        vsync_io: 6
+        de_io: 7
+        pclk_io: 13
+        xclk_io: 15
+        xclk_freq: 20000000
+        data_width: CAM_CTLR_DATA_WIDTH_8
+        data_io:
+          data_io_0: 11
+          data_io_1: 9
+          data_io_2: 8
+          data_io_3: 10
+          data_io_4: 12
+          data_io_5: 18
+          data_io_6: 17
+          data_io_7: 16
+    peripherals:
+      # See the comment on i2c_master in board_peripherals.yaml: the
+      # Freenove board has no external pull-ups on the camera SCCB
+      # lines. The ESP32-S3's internal ~45 kohm pull-ups work at
+      # 10 kHz (init takes ~50 ms for ~50 registers, acceptable) but
+      # fail at 50 kHz and above. The proper fix is to solder external
+      # 4.7 kohm pull-ups on GPIO4 / GPIO5, which would let us run at
+      # 100 kHz again.
+      - name: i2c_master
+        frequency: 10000
+
+  - name: fs_sdcard
+    type: fs_fat
+    sub_type: sdmmc
+    version: default
+    config:
+      vfs_config:
+        # esp_vfs_fat supports FAT12/16/32 only; the SD card MUST be FAT32,
+        # not exFAT. Cards that fail to mount should be re-formatted with
+        # the official SD Card Formatter, not silently wiped here.
+        format_if_mount_failed: false
+        max_files: 5
+      sub_config:
+        # 1-bit SDIO: only CMD/CLK/D0 are wired on this board.
+        # (D1/D2/D3 are not brought out.)
+        slot: SDMMC_HOST_SLOT_0
+        frequency: SDMMC_FREQ_DEFAULT
+        bus_width: 1
+        pins:
+          clk: 39
+          cmd: 38
+          d0: 40
+          cd: -1
+          wp: -1
+
+  - name: led_strip
+    chip: ws2812
+    type: custom
+    version: default
+    init_skip: true
+    dependencies:
+      espressif/led_strip:
+        version: "^3.0"
+        public: true
+    config:
+      max_leds: 1
+    peripherals:
+      - name: rmt_led

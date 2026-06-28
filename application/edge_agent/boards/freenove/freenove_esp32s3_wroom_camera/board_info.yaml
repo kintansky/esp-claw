@@ -1,0 +1,5 @@
+board: freenove_esp32s3_wroom_camera
+chip: esp32s3
+version: 1.0.0
+description: "Freenove ESP32-S3-WROOM-1 Camera Board (OV5640 DVP camera, WS2812 LED, microSD via 1-bit SDIO)"
+manufacturer: "Freenove"

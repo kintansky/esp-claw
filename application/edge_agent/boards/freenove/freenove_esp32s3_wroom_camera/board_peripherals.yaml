@@ -1,0 +1,68 @@
+version: 1.0.0
+# Peripherals Configuration for Freenove ESP32-S3-WROOM-1 Camera Board
+#
+# Bus allocation:
+#   I2C0  - camera SCCB (OV5640)
+#           SDA=GPIO4 (CAM_SIOD), SCL=GPIO5 (CAM_SIOC)
+#   RMT0  - WS2812 LED on GPIO48
+#
+# The on-board microSD slot uses 1-bit SDIO, which is configured directly
+# on the fs_sdcard device (sub_type: sdmmc) — it does not need a separate
+# peripheral entry, only the slot/clock/pin settings in the device's
+# sub_config (see esp_box_3 and dfrobot_firebeetle_2_ESP32_P4_for_camera
+# for reference).
+#
+# Pins explicitly NOT used here (and why):
+#   GPIO0  - strapping pin (boot mode), left alone
+#   GPIO3  - strapping pin (JTAG source select); the on-board JTAG_EN
+#            jumper enables JTAG over GPIO when shorted. We leave it
+#            floating to keep USB Serial/JTAG as the console source.
+#   GPIO19/20 - internal USB PHY (USB-C on the board)
+#   GPIO35/36/37 - hard-wired to the module's OPI PSRAM, not usable
+#   GPIO38/39/40 - on-board SDIO (CMD/CLK/D0), declared in the
+#            fs_sdcard device, not here
+#   GPIO43/44 - UART0 (left available for the on-board USB-UART chip
+#            if present; we use USB-Serial/JTAG for the console)
+#   GPIO45/46 - strapping pins (VDD_SPI / ROM messages), left alone
+
+peripherals:
+  - name: i2c_master
+    type: i2c
+    role: master
+    config:
+      port: 0
+      pins:
+        sda: 4
+        scl: 5
+      # The Freenove ESP32-S3-WROOM-1 Camera Board does not fit external
+      # pull-up resistors on the camera's SCCB lines (GPIO4/5). The
+      # OV5640 is therefore unreachable with the default I2C config:
+      # the 100 kHz / 50 kHz edges are too fast for the ESP32-S3's
+      # internal ~45 kohm pull-ups to pull the bus high in time, so
+      # every transaction returns "transmit receive failed".
+      #
+      # Enabling the internal pull-ups + dropping the SCCB to 10 kHz
+      # (in board_devices.yaml) is the configuration that the
+      # Freenove board needs. The XIAO ESP32-S3 Sense does not need
+      # this workaround because it ships with 4.7 kohm external
+      # pull-ups on its camera FPC.
+      sda_pullup_en: true
+      scl_pullup_en: true
+
+  - name: rmt_led
+    type: rmt
+    role: tx
+    config:
+      gpio_num: 48
+      clk_src: RMT_CLK_SRC_DEFAULT
+      resolution_hz: 10000000
+      mem_block_symbols: 64
+      trans_queue_depth: 4
+      intr_priority: 1
+      flags:
+        invert_out: false
+        with_dma: true
+        io_loop_back: false
+        io_od_mode: false
+        allow_pd: false
+        init_level: false
