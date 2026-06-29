@@ -45,13 +45,36 @@ CONFIG_ESP_CONSOLE_UART_NUM=0
 CONFIG_ESP_CONSOLE_UART_BAUDRATE_115200=y
 CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 
-# Camera: OV5640 over DVP 8-bit, JPEG 1024x768 @ 30 FPS default
+# Camera: OV5640 over DVP 8-bit, JPEG 1024x768 @ 30 FPS default.
+#
+# Both the OV5640 and the OV2640 drivers are compiled in so that
+# whichever module is plugged into the FPC connector is detected at
+# boot via the AUTO_DETECT probe. The 10 kHz SCCB clock set in
+# board_devices.yaml is the lowest common denominator that works for
+# both sensors with the Freenove board's internal-only pull-ups, so
+# no further tuning is needed when swapping modules.
+#
+# Each sensor has its own Kconfig choice block for the default format:
+# OV5640 boots at JPEG 1024x768 @ 30 FPS (5 MP), OV2640 at
+# JPEG 1280x720 @ 12 FPS (720p, 2 MP). The detected sensor's default
+# is used automatically.
+#
+# NOTE: the Freenove FPC pinout was designed for the OV5640, so an
+# OV2640 plugged into the same connector will respond to SCCB
+# correctly but produce garbled image data (the OV2640 module's
+# D0..D7 order does not match the Freenove FPC's wiring). The
+# auto-detect mechanism does not (and cannot) fix this — it is a
+# hardware-level constraint.
 CONFIG_ESP_BOARD_DEV_CAMERA_SUPPORT=y
 CONFIG_ESP_VIDEO_ENABLE_DVP_VIDEO_DEVICE=y
 CONFIG_CAMERA_OV5640=y
 CONFIG_CAMERA_OV5640_AUTO_DETECT_DVP_INTERFACE_SENSOR=y
 CONFIG_CAMERA_OV5640_DVP_JPEG_1024X768_30FPS=y
 CONFIG_CAMERA_OV5640_DVP_DEFAULT_FMT_JPEG_1024X768_30FPS=y
+CONFIG_CAMERA_OV2640=y
+CONFIG_CAMERA_OV2640_AUTO_DETECT_DVP_INTERFACE_SENSOR=y
+CONFIG_CAMERA_OV2640_DVP_JPEG_1280X720_12FPS=y
+CONFIG_CAMERA_OV2640_DVP_DEFAULT_FMT_JPEG_1280X720_12FPS=y
 CONFIG_APP_CLAW_LUA_MODULE_CAMERA=y
 
 # WS2812 LED on GPIO48 via RMT0.
